@@ -1,0 +1,11 @@
+name: primer_design
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - pandas
+  - pip
+  - primer3-py
+  - pylint
+  - python
+  - biopython
