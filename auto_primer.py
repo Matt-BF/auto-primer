@@ -48,15 +48,11 @@ def design_primer(seq_file, product_range, num_primers):
         return primer_designed
 
 
-def analyse_primers(positive_control_file):
+def analyse_primers():
     print("Calculating structure parameters...")
 
     ALL_STRUCTURES = {}
 
-    with open(positive_control_file) as positive_control_file:
-        primers = list(SeqIO.parse(positive_control_file, "fasta"))
-        primers[0] = str(primers[0])
-        primers[1] = str(primers[1])
 
     primer_dict = design_primer(args.seq_file, args.range, args.num)
 
@@ -78,32 +74,6 @@ def analyse_primers(positive_control_file):
             )
         )
 
-        ALL_STRUCTURES[i]["Heterodimer_forward_control"] = (
-            round(
-                p3.calcHeterodimerTm(
-                    primer_dict[f"PRIMER_LEFT_{i}_SEQUENCE"], primers[0]
-                )
-            ),
-            round(
-                p3.calcHeterodimerTm(
-                    primer_dict[f"PRIMER_LEFT_{i}_SEQUENCE"], primers[1]
-                )
-            ),
-        )
-
-        ALL_STRUCTURES[i]["Heterodimer_reverse_control"] = (
-            round(
-                p3.calcHeterodimerTm(
-                    primer_dict[f"PRIMER_RIGHT_{i}_SEQUENCE"], primers[0]
-                )
-            ),
-            round(
-                p3.calcHeterodimerTm(
-                    primer_dict[f"PRIMER_RIGHT_{i}_SEQUENCE"], primers[1]
-                )
-            ),
-        )
-
         ALL_STRUCTURES[i]["Homodimer_forward"] = round(
             p3.calcHomodimerTm(primer_dict[f"PRIMER_LEFT_{i}_SEQUENCE"])
         )
@@ -112,21 +82,13 @@ def analyse_primers(positive_control_file):
             p3.calcHomodimerTm(primer_dict[f"PRIMER_RIGHT_{i}_SEQUENCE"])
         )
 
-        ALL_STRUCTURES[i]["Tm_diff_forward_control"] = abs(
-            round(primer_dict[f"PRIMER_LEFT_{i}_TM"] - p3.calcTm(primers[0]))
-        )
-
-        ALL_STRUCTURES[i]["Tm_diff_reverse_control"] = abs(
-            round(primer_dict[f"PRIMER_RIGHT_{i}_TM"] - p3.calcTm(primers[1]))
-        )
-
     return (primer_dict, ALL_STRUCTURES)
 
 
 def filter_primers():
     print("Filtering best candidates...")
 
-    analysis = analyse_primers(args.positive_control_file)
+    analysis = analyse_primers()
     primer_dict = analysis[0]
     all_structures = analysis[1]
     FINAL_DICT = {}
@@ -136,8 +98,6 @@ def filter_primers():
             all_structures[i]["Hairpin_forward"] < 20
             and all_structures[i]["Hairpin_reverse"] < 20
             and all_structures[i]["Heterodimer_forward_reverse"] < 20
-            and all_structures[i]["Tm_diff_forward_control"] <= 2
-            and all_structures[i]["Tm_diff_reverse_control"] <= 2
         ):
             FINAL_DICT[f"primer_pair{i}"] = {
                 "seq_id": primer_dict["seq_id"],
@@ -183,11 +143,6 @@ if __name__ == "__main__":
         "seq_file",
         metavar="SEQ_FILE",
         help="FASTA file with sequences to design primers for",
-    )
-    parser.add_argument(
-        "positive_control_file",
-        metavar="POSITIVE_CONTOL_FILE",
-        help="FASTA file with positive control primers",
     )
     parser.add_argument(
         "--range",
